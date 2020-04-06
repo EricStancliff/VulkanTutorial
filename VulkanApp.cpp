@@ -1,5 +1,10 @@
 #include "VulkanApp.h"
 
+#include <filesystem>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 
 namespace
 {
@@ -116,6 +121,7 @@ void VulkanApp::initVulkan()
     createGraphicsPipeline();
     createFramebuffers();
     createCommandPool();
+    createTextureImage();
     createVertexBuffer();
     createIndexBuffer();
     createUniformBuffers();
@@ -516,8 +522,8 @@ void VulkanApp::createImageViews()
 
 void VulkanApp::createGraphicsPipeline()
 {
-    auto vertShaderCode = readShaderFile("C:\\My_Work\\VulkanTutorial\\shaders\\SimpleTriangle.vert.spv");
-    auto fragShaderCode = readShaderFile("C:\\My_Work\\VulkanTutorial\\shaders\\SimpleTriangle.frag.spv");
+    auto vertShaderCode = readShaderFile(std::filesystem::current_path().string() + "\\shaders\\SimpleTriangle.vert.spv");
+    auto fragShaderCode = readShaderFile(std::filesystem::current_path().string() + "\\shaders\\SimpleTriangle.frag.spv");
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -1219,4 +1225,18 @@ void VulkanApp::createDescriptorSets() {
         vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0, nullptr);
     }
 
+}
+
+void VulkanApp::createTextureImage() 
+{
+    int texWidth, texHeight, texChannels;
+    stbi_uc* pixels = stbi_load("textures/texture.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    VkDeviceSize imageSize = (VkDeviceSize)texWidth * (VkDeviceSize)texHeight * (VkDeviceSize)4;
+
+    if (!pixels) {
+        throw std::runtime_error("failed to load texture image!");
+    }
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
 }

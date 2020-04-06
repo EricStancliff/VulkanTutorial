@@ -75,3 +75,28 @@ configure_file(./shaders/CompileShaders.bat.in ${CMAKE_BINARY_DIR}/CompileShader
 add_custom_command(TARGET Shaders POST_BUILD DEPENDS ${Vulkan1_shaders}
     COMMAND ${CMAKE_BINARY_DIR}/CompileShaders.bat
 )
+
+set(TEXTURES_DIR ${CMAKE_SOURCE_DIR}/textures)
+set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
+set(OUTPUT_COPY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+if(WIN32)
+STRING(REGEX REPLACE "/" "\\\\" TEXTURES_DIR ${TEXTURES_DIR})
+STRING(REGEX REPLACE "/" "\\\\" SHADERS_DIR ${SHADERS_DIR})
+STRING(REGEX REPLACE "/" "\\\\" OUTPUT_COPY_DIR ${OUTPUT_COPY_DIR})
+add_custom_command(TARGET Vulkan1 POST_BUILD
+    COMMAND xcopy /i /s /y "${TEXTURES_DIR}" "${OUTPUT_COPY_DIR}\\$<CONFIGURATION>\\textures"
+)
+add_custom_command(TARGET Vulkan1 POST_BUILD
+    COMMAND xcopy /i /s /y "${SHADERS_DIR}\\*.spv" "${OUTPUT_COPY_DIR}\\$<CONFIGURATION>\\shaders"
+)
+set_target_properties(Vulkan1 PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:Vulkan1>"
+                                                   VS_DEBUGGER_COMMAND           "$<TARGET_FILE:Vulkan1>"
+                                                   VS_DEBUGGER_ENVIRONMENT       "PATH=%PATH%;${CMAKE_PREFIX_PATH}/bin")
+else()
+add_custom_command(TARGET Vulkan1 POST_BUILD
+    COMMAND cp "${TEXTURES_DIR}" "${OUTPUT_COPY_DIR}/textures"
+)
+add_custom_command(TARGET Vulkan1 POST_BUILD
+    COMMAND cp "${SHADERS_DIR}" "${OUTPUT_COPY_DIR}/shaders"
+)
+endif()

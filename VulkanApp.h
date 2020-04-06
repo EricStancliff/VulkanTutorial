@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -8,6 +10,7 @@
 #include <algorithm>
 #include <fstream>
 #include <array>
+#include <chrono>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -17,7 +20,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <chrono>
+#include <stb_image.h>
+
 
 
 class VulkanApp {
@@ -154,6 +158,8 @@ private:
     void createDescriptorPool();
 
     void createDescriptorSets();
+
+    void createTextureImage();
 
     //GLFW
     GLFWwindow* m_window;
