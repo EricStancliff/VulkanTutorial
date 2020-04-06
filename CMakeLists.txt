@@ -1,14 +1,47 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.7 FATAL_ERROR)
 project(Vulkan1)
 
 set (CMAKE_CXX_STANDARD 17)
 
-include(FindLibs.cmake)
+#get GLFW and add it to our build
+include(FetchContent)
+FetchContent_Declare(
+  GLFW
+  GIT_REPOSITORY https://github.com/glfw/glfw.git
+  GIT_TAG        3.3.2
+)
+FetchContent_MakeAvailable(GLFW)
 
-FindLibs(GLFW FALSE)
-FindLibs(GLM TRUE)
-FindLibs(VULKAN FALSE)
-#CheckLibs()
+#get glm and make it available to include
+include(ExternalProject)
+ExternalProject_Add(
+    glm
+    PREFIX ${CMAKE_BINARY_DIR}/glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+	GIT_TAG        0.9.9.7
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+    LOG_DOWNLOAD ON
+    )
+ExternalProject_Get_Property(glm source_dir)
+set(GlmIncludeDir ${source_dir})
+
+#get stb and make it available to include
+ExternalProject_Add(
+    stb
+    PREFIX ${CMAKE_BINARY_DIR}/stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+	GIT_TAG        origin/master
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+    LOG_DOWNLOAD ON
+    )
+ExternalProject_Get_Property(stb source_dir)
+set(StbIncludeDir ${source_dir})
+
+find_package(Vulkan REQUIRED)
 
 set(Vulkan1_includes
 	VulkanApp.h
@@ -25,12 +58,11 @@ set(Vulkan1_shaders
 )
 
 add_executable(Vulkan1 ${Vulkan1_includes} ${Vulkan1_source})
-#source_group("Shaders" FILES ${Vulkan1_shaders})
+add_dependencies(Vulkan1 glfw glm stb Vulkan::Vulkan)
+target_compile_definitions(Vulkan1 PRIVATE VK_USE_PLATFORM_WIN32_KHR)
+target_link_libraries(Vulkan1 glfw Vulkan::Vulkan)
+target_include_directories(Vulkan1 PRIVATE ${GLFW_SOURCE_DIR}/include ${GlmIncludeDir} ${StbIncludeDir} Vulkan_INCLUDE_DIR)
 
-target_link_libraries(Vulkan1 ${GLFW_LIB} ${VULKAN_LIB})
-target_include_directories(Vulkan1 PUBLIC ${GLFW_INCLUDE} ${GLM_INCLUDE} ${VULKAN_INCLUDE})
-
-configure_file(Vulkan1.vcxproj.user.in ${CMAKE_BINARY_DIR}/Vulkan1.vcxproj.user @ONLY) 
 add_custom_target(Shaders ALL SOURCES ${Vulkan1_shaders} DEPENDS ${Vulkan1_shaders})
 
 set(SHADERS_DIR "${CMAKE_SOURCE_DIR}/shaders")
