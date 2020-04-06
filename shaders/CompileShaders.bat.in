@@ -1,1 +1,1 @@
-for %%i in (@SHADERS_DIR@\*.vert @SHADERS_DIR@\*.frag) do @VULKAN_BIN@/glslc.exe %%i -o %%i.spv
+for %%i in (@SHADERS_DIR@\*.vert @SHADERS_DIR@\*.frag) do glslc.exe %%i -o %%i.spv
