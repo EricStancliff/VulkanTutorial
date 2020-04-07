@@ -41,6 +41,20 @@ ExternalProject_Add(
 ExternalProject_Get_Property(stb source_dir)
 set(StbIncludeDir ${source_dir})
 
+#get tinyobjloader and make it available to include
+ExternalProject_Add(
+    tinyobjloader
+    PREFIX ${CMAKE_BINARY_DIR}/tinyobjloader
+    GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+	GIT_TAG        origin/master
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ""
+    LOG_DOWNLOAD ON
+    )
+ExternalProject_Get_Property(tinyobjloader source_dir)
+set(TinyobjloaderIncludeDir ${source_dir})
+
 find_package(Vulkan REQUIRED)
 
 set(Vulkan1_includes
@@ -61,7 +75,7 @@ add_executable(Vulkan1 ${Vulkan1_includes} ${Vulkan1_source})
 add_dependencies(Vulkan1 glfw glm stb Vulkan::Vulkan)
 target_compile_definitions(Vulkan1 PRIVATE VK_USE_PLATFORM_WIN32_KHR)
 target_link_libraries(Vulkan1 glfw Vulkan::Vulkan)
-target_include_directories(Vulkan1 PRIVATE ${GLFW_SOURCE_DIR}/include ${GlmIncludeDir} ${StbIncludeDir} Vulkan_INCLUDE_DIR)
+target_include_directories(Vulkan1 PRIVATE ${GLFW_SOURCE_DIR}/include ${GlmIncludeDir} ${StbIncludeDir} ${Vulkan_INCLUDE_DIR} ${TinyobjloaderIncludeDir})
 
 add_custom_target(Shaders ALL SOURCES ${Vulkan1_shaders} DEPENDS ${Vulkan1_shaders})
 
@@ -75,3 +89,36 @@ configure_file(./shaders/CompileShaders.bat.in ${CMAKE_BINARY_DIR}/CompileShader
 add_custom_command(TARGET Shaders POST_BUILD DEPENDS ${Vulkan1_shaders}
     COMMAND ${CMAKE_BINARY_DIR}/CompileShaders.bat
 )
+
+set(TEXTURES_DIR ${CMAKE_SOURCE_DIR}/textures)
+set(SHADERS_DIR ${CMAKE_SOURCE_DIR}/shaders)
+set(MODELS_DIR ${CMAKE_SOURCE_DIR}/models)
+set(OUTPUT_COPY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+if(WIN32)
+STRING(REGEX REPLACE "/" "\\\\" TEXTURES_DIR ${TEXTURES_DIR})
+STRING(REGEX REPLACE "/" "\\\\" SHADERS_DIR ${SHADERS_DIR})
+STRING(REGEX REPLACE "/" "\\\\" MODELS_DIR ${MODELS_DIR})
+STRING(REGEX REPLACE "/" "\\\\" OUTPUT_COPY_DIR ${OUTPUT_COPY_DIR})
+add_custom_command(TARGET Vulkan1 POST_BUILD
+    COMMAND xcopy /i /s /y "${TEXTURES_DIR}" "${OUTPUT_COPY_DIR}\\$<CONFIGURATION>\\textures"
+)
+add_custom_command(TARGET Vulkan1 POST_BUILD
+    COMMAND xcopy /i /s /y "${SHADERS_DIR}\\*.spv" "${OUTPUT_COPY_DIR}\\$<CONFIGURATION>\\shaders"
+)
+add_custom_command(TARGET Vulkan1 POST_BUILD
+    COMMAND xcopy /i /s /y "${MODELS_DIR}" "${OUTPUT_COPY_DIR}\\$<CONFIGURATION>\\models"
+)
+set_target_properties(Vulkan1 PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:Vulkan1>"
+                                                   VS_DEBUGGER_COMMAND           "$<TARGET_FILE:Vulkan1>"
+                                                   VS_DEBUGGER_ENVIRONMENT       "PATH=%PATH%;${CMAKE_PREFIX_PATH}/bin")
+else()
+add_custom_command(TARGET Vulkan1 POST_BUILD
+    COMMAND cp "${TEXTURES_DIR}" "${OUTPUT_COPY_DIR}/textures"
+)
+add_custom_command(TARGET Vulkan1 POST_BUILD
+    COMMAND cp "${SHADERS_DIR}/*.spv" "${OUTPUT_COPY_DIR}/shaders"
+)
+add_custom_command(TARGET Vulkan1 POST_BUILD
+    COMMAND cp "${MODELS_DIR}" "${OUTPUT_COPY_DIR}/models"
+)
+endif()
